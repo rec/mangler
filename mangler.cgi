@@ -1,5 +1,8 @@
 #!/usr/bin/perl --
 
+use FindBin 1.51 qw( $RealBin );
+use lib $RealBin;
+
 require parse_args;
 
 use CGI::Carp qw(fatalsToBrowser);
@@ -24,7 +27,7 @@ $defaultText = "Have fun with this toy.  Just play with it.\nSet all the values,
 #}
 
 # we create all these global variables!
-# 
+#
 
 $last   = @parts-1;
 $join   = $isChar ? "" : $split;
@@ -82,24 +85,24 @@ Content-type: text/html
 	<option value="filter">filter</option>
 	<option value="stutter">stutter</option>
 	<option value="stagger">stagger</option>
-      </select> 
-      Mangle by 
+      </select>
+      Mangle by
       <select name="splitBy">
 	<option value="word" $wordSelected>word</option>
 	<option value="line" $lineSelected>line</option>
 	<option value="char" $charSelected>char</option>
-      </select> 
-      
+      </select>
+
     <br>
     Your text here.<br>
     <textarea rows="20" name="text" cols="132">$result</textarea> <br>
 
-    <input color="red" type="submit" name="Mangle!" value="Mangle!"> 
-<!-- 
+    <input color="red" type="submit" name="Mangle!" value="Mangle!">
+<!--
     <input color="red" type="reset" name="Clear!" value="Clear!">
 -->
     <br>
-    Every (for "every" command only): 
+    Every (for "every" command only):
       <select name="every">
 	<option>1</option>
 	<option>2</option>
@@ -121,11 +124,11 @@ Content-type: text/html
 	<option>18</option>
 	<option>19</option>
 	<option>20</option>
-      </select> 
+      </select>
     <br>
 
     On each (for "every" command only):
-    <input type="checkbox" name="use0" CHECKED value="1">1 
+    <input type="checkbox" name="use0" CHECKED value="1">1
     <input type="checkbox" name="use1" value="1">2
     <input type="checkbox" name="use2" value="1">3
     <input type="checkbox" name="use3" value="1">4
@@ -164,7 +167,7 @@ sub sort { return sort @parts; }
 
 sub interleave {
     local @ret;
-    
+
     for (0..$last) {
 	local $rem = $_ % 2;
 	local $div = ($_-$rem)/2;
@@ -176,7 +179,7 @@ sub interleave {
 
 sub weave {
     local @ret;
-    
+
     for (0..$last) {
 	local $rem = $_ % 2;
 	local $div = ($_-$rem)/2;
@@ -225,7 +228,7 @@ sub stutter {
 	for ($i=0; $i==0 || ($i<5 && frand()); $i++) {
 	    push @ret, $_;
 	}
-    }   
+    }
     return @ret;
 }
 
