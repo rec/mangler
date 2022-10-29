@@ -1,0 +1,311 @@
+<html>
+<head><title>mangler source</title></head>
+<body>
+<pre>
+#!/usr/bin/perl --
+
+#
+# "library" subroutine to get variables from a URL.
+#
+
+sub parse_args {
+    local (@pairs, $pair);
+    local (%args);
+    local ($dummy) = @_;
+
+    # Determine the form's REQUEST_METHOD (GET or POST) and split the form   #
+    # fields up into their name-value pairs.  If the REQUEST_METHOD was      #
+    # not GET or POST, send an error.                                        #
+    if ($ENV{'REQUEST_METHOD'} eq 'GET') {
+        # Split the name-value pairs
+        @pairs = split(/&/, $ENV{'QUERY_STRING'});
+    }
+    elsif ($ENV{'REQUEST_METHOD'} eq 'POST') {
+        # Get the input
+        read(STDIN, $buffer, $ENV{'CONTENT_LENGTH'});
+ 
+        # Split the name-value pairs
+        @pairs = split(/&/, $buffer);
+    } else {
+	@pairs = split( /&/, $dummy );
+    }
+ 
+    # For each name-value pair:                                              #
+    foreach $pair (@pairs) {
+
+        # Split the pair up into individual variables.                       #
+        local($name, $value) = split(/=/, $pair);
+ 
+        # Decode the form encoding on the name and value variables.          #
+        $name =~ tr/+/ /;
+        $name =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+
+        $value =~ tr/+/ /;
+        $value =~ s/%([a-fA-F0-9][a-fA-F0-9])/pack("C", hex($1))/eg;
+
+  	$args{$name} = $value;
+    }
+    return %args;
+}
+
+#
+# main code starts here.
+#
+
+%env = parse_args( "cmd=weave&text=you+should+never+see+this+in+a+browser+really+honest+and+for+true&every=3&use0=1&filter=0&noHTML=1");
+
+$default = "";
+$isLine = $env{"splitBy"} eq "line";
+$isWord = $env{"splitBy"} eq "word";
+$isChar = $env{"splitBy"} eq "char";
+$split  = $isLine ? "\n" : ($isChar ? "\^*" : " ");
+$text   = $env{"text"};
+$cmd    = $env{"cmd"} || "none";
+@parts  = split( /$split/, $text );
+
+$defaultFilter = 50;
+$defaultText = "Have fun with this toy.  Just play with it.\nSet all the values, just click around.\nPlay with the filter, for some commands.\nMangle text joyously, play with it.\n\n\nThe back and forward on your browser\ncan be used to undo and redo.\nIt's up to you.";
+
+#for (@parts) {
+#    s/^\s*//g;
+#    s/\s*$//g;
+#}
+
+# we create all these global variables!
+# 
+
+$last   = @parts-1;
+$join   = $isChar ? "" : $split;
+# $join = $isLine ? "/\n" : " ";
+$name   = "poetry mangler";
+$submit = "mangler.cgi";
+$title  = $cmd eq "none" ? "$name" : "$name: $cmd $target";
+$seed   = $env{"seed"};
+srand $seed if defined $seed;
+$filter = $env{"filter"};
+$filter = $defaultFilter unless defined $filter;
+
+$wordSelected = $isWord ? "selected" : "";
+$lineSelected = $isLine ? "selected" : "";
+$charSelected = $isChar ? "selected" : "";
+
+
+if (defined $text) {
+
+    #
+    # all this work has led up to this one line... here:
+    #
+    $result = join( $join, &$cmd( ) );  # $cmd can modify any variable it likes.
+
+} else {
+
+    # no text at all, don't bother to mangle, use default.
+    $result = $defaultText;
+
+}
+
+#
+# we applied the mangler, and now we display the results.
+#
+
+$noHTML = $env{"noHTML"};
+
+if ($noHTML) {
+    print "$result\n";
+    exit 0;
+}
+
+#
+# here's the HTML form that's used to display and mangle the text.
+#
+
+print &lt;&lt;EOF;
+Content-type: text/html
+
+&lt;html>
+  &lt;head>&lt;title>$title&lt;/title>&lt;/head>
+  &lt;body>
+    &lt;form name="theForm" method="POST" action="$submit">
+     How should I mangle? &lt;select name="cmd">
+	&lt;option value="none">none&lt;/option>
+	&lt;option value="random">random&lt;/option>
+	&lt;option value="reverse">reverse&lt;/option>
+	&lt;option value="sort">sort&lt;/option>
+	&lt;option value="weave">weave&lt;/option>
+	&lt;option value="interleave" selected>interleave&lt;/option>
+	&lt;option value="every">every&lt;/option>
+	&lt;option value="filter">filter&lt;/option>
+	&lt;option value="stutter">stutter&lt;/option>
+	&lt;option value="stagger">stagger&lt;/option>
+      &lt;/select> 
+      Mangle by 
+      &lt;select name="splitBy">
+	&lt;option value="word" $wordSelected>word&lt;/option>
+	&lt;option value="line" $lineSelected>line&lt;/option>
+	&lt;option value="char" $charSelected>char&lt;/option>
+      &lt;/select> 
+      
+    &lt;br>
+    Your text here.&lt;br>
+    &lt;textarea rows="20" name="text" cols="132">$result&lt;/textarea> &lt;br>
+
+    &lt;input color="red" type="submit" name="Mangle!" value="Mangle!"> 
+&lt;!-- 
+    &lt;input color="red" type="reset" name="Clear!" value="Clear!">
+-->
+    &lt;br>
+    Every (for "every" command only): 
+      &lt;select name="every">
+	&lt;option>1&lt;/option>
+	&lt;option>2&lt;/option>
+	&lt;option selected>3&lt;/option>
+	&lt;option>4&lt;/option>
+	&lt;option>5&lt;/option>
+	&lt;option>6&lt;/option>
+	&lt;option>7&lt;/option>
+	&lt;option>8&lt;/option>
+	&lt;option>9&lt;/option>
+	&lt;option>10&lt;/option>
+	&lt;option>11&lt;/option>
+	&lt;option>12&lt;/option>
+	&lt;option>13&lt;/option>
+	&lt;option>14&lt;/option>
+	&lt;option>15&lt;/option>
+	&lt;option>16&lt;/option>
+	&lt;option>17&lt;/option>
+	&lt;option>18&lt;/option>
+	&lt;option>19&lt;/option>
+	&lt;option>20&lt;/option>
+      &lt;/select> 
+    &lt;br>
+
+    On each (for "every" command only):
+    &lt;input type="checkbox" name="use0" CHECKED value="1">1 
+    &lt;input type="checkbox" name="use1" value="1">2
+    &lt;input type="checkbox" name="use2" value="1">3
+    &lt;input type="checkbox" name="use3" value="1">4
+    &lt;input type="checkbox" name="use4" value="1">5
+    &lt;input type="checkbox" name="use5" value="1">6
+    &lt;input type="checkbox" name="use6" value="1">7
+    &lt;input type="checkbox" name="use7" value="1">8
+    &lt;input type="checkbox" name="use8" value="1">9
+    &lt;input type="checkbox" name="use9" value="1">10&lt;br>
+    -------------------------------- &lt;input type="checkbox" name="use10" value="1">11
+    &lt;input type="checkbox" name="use11" value="1">12
+    &lt;input type="checkbox" name="use12" value="1">13
+    &lt;input type="checkbox" name="use13" value="1">14
+    &lt;input type="checkbox" name="use14" value="1">15
+    &lt;input type="checkbox" name="use15" value="1">16
+    &lt;input type="checkbox" name="use16" value="1">17
+    &lt;input type="checkbox" name="use17" value="1">18
+    &lt;input type="checkbox" name="use18" value="1">19
+    &lt;input type="checkbox" name="use19" value="1">20
+    &lt;br>&lt;p>
+    Filter: &lt;input type="text" name="filter" value="$filter"> (0-100%, for filter, stutter, stagger only)&lt;br>
+    Seed: &lt;input type="text" name="seed" value="$seed"> (A random seed for random, filter, stutter, stagger only.)&lt;br>
+    Re-entering the same seed gets the same random numbers each time.
+&lt;p>&lt;p>Use the back and forward buttons in the browser!&lt;br>Cut and paste!&lt;br>Play with the filter and the manglers!
+  &lt;/form>
+&lt;/body>&lt;/html>
+EOF
+
+#
+# end of HTML form.
+#
+
+
+#
+# "plug-ins" start here.
+# a plug-in is a Perl function that takes a list (either words or lines of text)
+# and somehow mangles it.
+#
+
+sub none    { return @parts; }
+
+sub reverse { return reverse @parts; }
+
+sub sort { return sort @parts; }
+
+sub interleave {
+    local @ret;
+    
+    for (0..$last) {
+	local $rem = $_ % 2;
+	local $div = ($_-$rem)/2;
+	local $loc = ($rem == 0) ? $div : $last-$div;
+	$ret[$_] = $parts[ $loc ];
+    }
+    return @ret;
+}
+
+sub weave {
+    local @ret;
+    
+    for (0..$last) {
+	local $rem = $_ % 2;
+	local $div = ($_-$rem)/2;
+	local $loc = ($rem == 0) ? $div : $div + int( $last/2 );
+	$ret[$_] = $parts[ $loc ];
+    }
+    return @ret;
+}
+
+sub every {
+    $every = $env{"every"};
+    $title = "$name: every $every $target";
+    @ret = ();
+    for (0..$last) {
+	 $rem = $_ % $every;
+	 push @ret, $parts[$_] if $env{"use$rem"};
+    }
+    return @ret;
+}
+
+sub random {
+    @ret = @parts;
+    for (0..$last-1) {
+	$loc = $_ + int ($last-$loc) * rand;
+	if ($_ != $loc) {
+	    ($ret[$_], $ret[$loc]) = ($ret[$loc], $ret[$_]);
+	}
+    }
+    return @ret;
+}
+
+sub frand() { return $filter/100 > rand; }
+
+
+sub filter {
+    @ret = ();
+    for (@parts) {
+	 push @ret, $_ if frand();
+    }
+    return @ret;
+}
+
+sub stutter {
+    @ret = ();
+    for (@parts) {
+	for ($i=0; $i==0 || ($i&lt;5 && frand()); $i++) {
+	    push @ret, $_;
+	}
+    }   
+    return @ret;
+}
+
+sub stagger {
+    # $title = "STAGGER!!";
+    @ret = ();
+    for ($i=0, $steps=0; $i&lt;=$last && $steps &lt;= $last*20; $steps++) {
+	push @ret, $parts[$i];
+	if ($i==0) { $i=1; }
+	else       { $i += (((50 + $filter/2) >= rand()*100) ? 1 : -1);  }
+    }
+    return @ret;
+}
+
+
+
+</pre>
+</body>
+</html>
